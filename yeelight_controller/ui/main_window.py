@@ -24,10 +24,12 @@ class MainWindow(QWidget):
     def __init__(
         self,
         controller: YeelightController,
+        device_name: str = "Lightstrip Plus",
     ):
         super().__init__()
 
         self.controller = controller
+        self.device_name = device_name
         self.is_light_on = False
         self.effect_is_running = False
 
@@ -128,7 +130,7 @@ class MainWindow(QWidget):
         )
 
         subtitle_label = QLabel(
-            "Lightstrip Plus"
+            self.device_name
         )
         subtitle_label.setObjectName(
             "windowSubtitle"

@@ -2,22 +2,21 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from config import YEELIGHT_IP
-from yeelight_controller.core.controller import YeelightController
+from config import DEFAULT_DEVICE_ID, YEELIGHT_DEVICES
+from yeelight_controller.core.device_manager import DeviceManager
 from yeelight_controller.ui.main_window import MainWindow
 from yeelight_controller.ui.styles import APP_STYLE
 
 
 def main() -> None:
     app = QApplication(sys.argv)
-
     app.setStyleSheet(APP_STYLE)
 
-    controller = YeelightController(YEELIGHT_IP)
+    device_manager = DeviceManager(YEELIGHT_DEVICES)
+    controller = device_manager.get_controller(DEFAULT_DEVICE_ID)
     window = MainWindow(controller)
 
     window.show()
-
     sys.exit(app.exec())
 
 

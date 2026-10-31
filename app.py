@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QApplication
 
 from config import DEFAULT_DEVICE_ID, YEELIGHT_DEVICES
 from yeelight_controller.core.device_manager import DeviceManager
-from yeelight_controller.ui.main_window import MainWindow
+from yeelight_controller.ui.device_window import DeviceWindow
 from yeelight_controller.ui.styles import APP_STYLE
 
 
@@ -13,8 +13,7 @@ def main() -> None:
     app.setStyleSheet(APP_STYLE)
 
     device_manager = DeviceManager(YEELIGHT_DEVICES)
-    controller = device_manager.get_controller(DEFAULT_DEVICE_ID)
-    window = MainWindow(controller)
+    window = DeviceWindow(device_manager, DEFAULT_DEVICE_ID)
 
     window.show()
     sys.exit(app.exec())

@@ -45,6 +45,7 @@ class DeviceWindow(QWidget):
                 MainWindow(
                     device_manager.get_controller(device.id),
                     device_name=device.name,
+                    supports_screen_sync=(device.model == "YLDD005"),
                 )
             )
 
@@ -65,3 +66,8 @@ class DeviceWindow(QWidget):
 
         self.device_selector.setCurrentIndex(index)
         self.panels.setCurrentIndex(index)
+
+    def closeEvent(self, event) -> None:
+        for index in range(self.panels.count()):
+            self.panels.widget(index).control_panel.shutdown()
+        super().closeEvent(event)

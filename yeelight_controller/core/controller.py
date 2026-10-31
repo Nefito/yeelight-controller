@@ -21,6 +21,7 @@ class LightState:
 
 class YeelightController:
     def __init__(self, ip_address: str):
+        self.ip_address = ip_address
         self.bulb = Bulb(ip_address)
 
     def turn_on(self) -> None:

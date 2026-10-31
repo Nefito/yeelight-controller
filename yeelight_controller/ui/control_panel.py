@@ -16,6 +16,7 @@ from yeelight_controller.ui.color.color_control import ColorControl
 from yeelight_controller.ui.color.color_presets import ColorPresets
 from yeelight_controller.ui.effects.effects_control import EffectsControl
 from yeelight_controller.ui.section_card import SectionCard
+from yeelight_controller.ui.screen_sync_control import ScreenSyncControl
 from yeelight_controller.ui.timers.timers_control import TimersControl
 
 
@@ -30,12 +31,15 @@ class ControlPanel(QWidget):
         effect_engine: EffectEngine,
         timer_manager: TimerManager,
         parent: QWidget | None = None,
+        supports_screen_sync: bool = False,
     ):
         super().__init__(parent)
 
         self.controller = controller
         self.effect_engine = effect_engine
         self.timer_manager = timer_manager
+        self.supports_screen_sync = supports_screen_sync
+        self.screen_sync_active = False
 
         self.setup_ui()
         self.create_opacity_effects()
@@ -51,6 +55,8 @@ class ControlPanel(QWidget):
         self.create_brightness_section(layout)
         self.create_effects_section(layout)
         self.create_timers_section(layout)
+        if self.supports_screen_sync:
+            self.create_screen_sync_section(layout)
 
     def create_color_section(
         self,
@@ -154,6 +160,12 @@ class ControlPanel(QWidget):
 
         parent_layout.addWidget(section)
 
+    def create_screen_sync_section(self, parent_layout: QVBoxLayout) -> None:
+        section = SectionCard("Screen Sync", self)
+        self.screen_sync_control = ScreenSyncControl(self.controller.ip_address, self)
+        section.add_widget(self.screen_sync_control)
+        parent_layout.addWidget(section)
+
     def create_opacity_effects(self) -> None:
         self.color_control_effect = QGraphicsOpacityEffect(self)
         self.color_presets_effect = QGraphicsOpacityEffect(self)
@@ -187,6 +199,9 @@ class ControlPanel(QWidget):
         self.timers_control.statusChanged.connect(
             self.statusChanged
         )
+        if self.supports_screen_sync:
+            self.screen_sync_control.runningChanged.connect(self.handle_screen_sync_running)
+            self.screen_sync_control.statusChanged.connect(self.statusChanged)
         self.timers_control.lightStateRefreshRequested.connect(
             self.lightStateRefreshRequested
         )
@@ -214,6 +229,7 @@ class ControlPanel(QWidget):
         manual_controls_enabled = (
             enabled
             and not self.effect_engine.is_running()
+            and not self.screen_sync_active
         )
 
         self.color_control.setEnabled(
@@ -226,11 +242,16 @@ class ControlPanel(QWidget):
             manual_controls_enabled
         )
         self.effects_control.setEnabled(
-            enabled
+            enabled and not self.screen_sync_active
         )
         self.timers_control.setEnabled(
-            enabled
+            enabled and not self.screen_sync_active
         )
+        if self.supports_screen_sync:
+            self.screen_sync_control.set_light_enabled(enabled)
+            self.screen_sync_control.button.setEnabled(
+                self.screen_sync_active or (enabled and not self.effect_engine.is_running())
+            )
 
         manual_opacity = (
             1.0
@@ -253,10 +274,10 @@ class ControlPanel(QWidget):
             manual_opacity
         )
         self.effects_control_effect.setOpacity(
-            enabled_opacity
+            1.0 if enabled and not self.screen_sync_active else 0.45
         )
         self.timers_control_effect.setOpacity(
-            enabled_opacity
+            1.0 if enabled and not self.screen_sync_active else 0.45
         )
 
     def stop_effect(self) -> None:
@@ -269,3 +290,15 @@ class ControlPanel(QWidget):
         self.effectRunningChanged.emit(
             running
         )
+    def handle_screen_sync_running(self, running: bool) -> None:
+        self.screen_sync_active = running
+        self.set_enabled(self.screen_sync_control.light_enabled)
+        self.statusChanged.emit("● Screen sync running" if running else "● Screen sync stopped")
+
+    def stop_screen_sync(self) -> None:
+        if self.supports_screen_sync:
+            self.screen_sync_control.stop()
+
+    def shutdown(self) -> None:
+        if self.supports_screen_sync:
+            self.screen_sync_control.shutdown()

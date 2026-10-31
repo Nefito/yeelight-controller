@@ -43,18 +43,36 @@ class ScreenSyncWorker(QThread):
 
     @staticmethod
     def _read_response(sock, command_id):
-        data = b""
-        while b"\n" not in data:
-            chunk = sock.recv(4096)
-            if not chunk:
-                raise ConnectionError("Strip closed the control connection.")
-            data += chunk
-        for line in data.splitlines():
-            if line.strip():
-                response = json.loads(line)
+        """Read complete newline-delimited messages until our command is answered."""
+        pending = b""
+        observed_ids = []
+        while True:
+            while b"\n" in pending:
+                line, pending = pending.split(b"\n", 1)
+                if not line.strip():
+                    continue
+                try:
+                    response = json.loads(line.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
                 if response.get("id") == command_id:
                     return response
-        raise ConnectionError("Missing Music Mode response.")
+                if "id" in response:
+                    observed_ids.append(response["id"])
+
+            try:
+                chunk = sock.recv(4096)
+            except socket.timeout as exc:
+                raise TimeoutError(
+                    "Timed out waiting for Music Mode acknowledgement "
+                    f"(other response IDs: {observed_ids[-5:]})"
+                ) from exc
+            if not chunk:
+                raise ConnectionError(
+                    "Strip closed connection before Music Mode acknowledgement "
+                    f"(other response IDs: {observed_ids[-5:]})"
+                )
+            pending += chunk
 
     def _stop_music_mode(self):
         try:

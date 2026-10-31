@@ -31,6 +31,7 @@ class MainWindow(QWidget):
 
         self.controller = controller
         self.device_name = device_name
+        self.supports_screen_sync = supports_screen_sync
         self.is_light_on = False
         self.effect_is_running = False
 
@@ -73,7 +74,7 @@ class MainWindow(QWidget):
             self.effect_engine,
             self.timer_manager,
             self,
-            supports_screen_sync=supports_screen_sync,
+            supports_screen_sync=self.supports_screen_sync,
         )
 
         self.control_panel.statusChanged.connect(

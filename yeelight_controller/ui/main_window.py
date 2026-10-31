@@ -25,6 +25,7 @@ class MainWindow(QWidget):
         self,
         controller: YeelightController,
         device_name: str = "Lightstrip Plus",
+        supports_screen_sync: bool = False,
     ):
         super().__init__()
 
@@ -72,6 +73,7 @@ class MainWindow(QWidget):
             self.effect_engine,
             self.timer_manager,
             self,
+            supports_screen_sync=supports_screen_sync,
         )
 
         self.control_panel.statusChanged.connect(
@@ -229,6 +231,10 @@ class MainWindow(QWidget):
     def toggle_power(self) -> None:
         try:
             if self.is_light_on:
+                if self.control_panel.screen_sync_active:
+                    self.control_panel.stop_screen_sync()
+                    self.status_label.setText("● Stop screen sync before turning off")
+                    return
                 if self.effect_is_running:
                     self.control_panel.stop_effect()
                     self.effect_is_running = False
@@ -295,3 +301,6 @@ class MainWindow(QWidget):
         self.status_label.setText(
             status
         )
+    def closeEvent(self, event) -> None:
+        self.control_panel.shutdown()
+        super().closeEvent(event)

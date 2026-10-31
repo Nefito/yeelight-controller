@@ -1,7 +1,7 @@
 """Read-only Yeelight Lightstrip Pro LAN diagnostics.
 
 Run from the project root:
-    python scripts/pro_lan_diagnostics.py
+    python -m scripts.pro_lan_diagnostics
 
 This script sends only the standard Yeelight get_prop request.
 It does not change power, color, brightness, effects, or timers.
